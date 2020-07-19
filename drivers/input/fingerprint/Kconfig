@@ -1,9 +1,16 @@
- menu "Fingerprint Drivers"
+#
+# Fingerprint driver configuration
+#
 
-config FINGERPRINT_FPC1020
-	tristate "fpc fpc1020 fingerprint drvier support"
+menuconfig INPUT_FINGERPRINT
+	bool "Fingerprints"
 	help
-	  say y here to enable fpc fingerprint driver support!  
+	  Say Y here, and a list of supported fingerprints will be displayed.
+	  This option doesn't affect the kernel.
 
+	  If unsure, say Y.
 
-endmenu
+if INPUT_FINGERPRINT
+source "drivers/input/fingerprint/fpc1020/Kconfig"
+source "drivers/input/fingerprint/gf3208/Kconfig"
+endif
