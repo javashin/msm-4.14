@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0
 VERSION = 4
 PATCHLEVEL = 14
+<<<<<<< HEAD
 SUBLEVEL = 117
-EXTRAVERSION =
+EXTRAVERSION = -jsX
 NAME = Petit Gorille
 
 # *DOCUMENTATION*
@@ -363,9 +364,9 @@ HOST_LFS_LIBS := $(shell getconf LFS_LIBS 2>/dev/null)
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   := -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 \
+HOSTCFLAGS   := -Wall -Wmissing-prototypes -Wstrict-prototypes -O3 \
 		-fomit-frame-pointer -std=gnu89 $(HOST_LFS_CFLAGS)
-HOSTCXXFLAGS := -O2 $(HOST_LFS_CFLAGS)
+HOSTCXXFLAGS := -O3 $(HOST_LFS_CFLAGS)
 HOSTLDFLAGS  := $(HOST_LFS_LDFLAGS)
 HOST_LOADLIBES := $(HOST_LFS_LIBS)
 
@@ -421,11 +422,11 @@ LINUXINCLUDE    := \
 		$(USERINCLUDE)
 
 KBUILD_AFLAGS   := -D__ASSEMBLY__
-KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
+KBUILD_CFLAGS   := -O3 -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common -fshort-wchar \
 		   -Werror-implicit-function-declaration \
-		   -Wno-format-security \
-		   -std=gnu89
+		   -Wno-format-security -fno-stack-protector \
+		   -std=gnu89 -pipe
 KBUILD_CPPFLAGS := -D__KERNEL__
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
@@ -684,16 +685,18 @@ else
 ifdef CONFIG_PROFILE_ALL_BRANCHES
 KBUILD_CFLAGS	+= -O2 $(call cc-disable-warning,maybe-uninitialized,)
 else
-KBUILD_CFLAGS   += -O2
+KBUILD_CFLAGS   += -O3
 ifeq ($(cc-name),clang)
 KBUILD_CFLAGS	+= -O3
-KBUILD_CFLAGS	+= -mcpu=cortex-a53 -mtune=cortex-a53
+KBUILD_CFLAGS   += -mcpu=kryo -mtune=kryo
 endif
 endif
 endif
 
 KBUILD_CFLAGS += $(call cc-ifversion, -lt, 0409, \
 			$(call cc-disable-warning,maybe-uninitialized,))
+
+#NO - KBUILD_CFLAGS   += -mcpu=cortex-a53 -mtune=cortex-a53
 
 ifdef CONFIG_CC_WERROR
 KBUILD_CFLAGS	+= -Werror
