@@ -234,6 +234,7 @@ static void kgsl_iommu_add_global(struct kgsl_mmu *mmu,
 		return;
 
 	if (WARN_ON(size > KGSL_IOMMU_GLOBAL_MEM_SIZE))
+
 		return;
 
 	if (memdesc->priv & KGSL_MEMDESC_RANDOM) {
