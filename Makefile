@@ -2,7 +2,7 @@
 VERSION = 4
 PATCHLEVEL = 14
 SUBLEVEL = 117
-EXTRAVERSION = -jsX
+EXTRAVERSION = -Ginkgo-Vikingo
 NAME = Petit Gorille
 
 KBUILD_CFLAGS   += -O3 $(call cc-disable-warning,maybe-uninitialized,)
