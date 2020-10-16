@@ -5,6 +5,25 @@ SUBLEVEL = 117
 EXTRAVERSION = -jsX
 NAME = Petit Gorille
 
+KBUILD_CFLAGS   += -O3 $(call cc-disable-warning,maybe-uninitialized,)
+KBUILD_CFLAGS += $(call cc-option,-mcpu=kyro,$(call cc-option,-mcpu=cortex-a73.cortex-a53 -march=armv8-a+fp+simd+crc+crypto,-march=armv8-a+fp+simd+crc+crypto))
+
+# Or armv8-a Compile fine.
+ifeq ($(cc-name),clang)
+KBUILD_CFLAGS   += -march=armv8-a+fp+simd+crc+crypto -mcpu=kryo -mtune=kryo
+endif
+
+ifdef CONFIG_POLLY_CLANG
+KBUILD_CFLAGS	+= -mllvm -polly \
+		   -mllvm -polly-run-dce \
+		   -mllvm -polly-run-inliner \
+		   -mllvm -polly-opt-fusion=max \
+		   -mllvm -polly-ast-use-context \
+		   -mllvm -polly-detect-keep-going \
+		   -mllvm -polly-vectorizer=stripmine \
+		   -mllvm -polly-invariant-load-hoisting
+endif
+
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
 # More info can be located in ./README
@@ -421,11 +440,11 @@ LINUXINCLUDE    := \
 		$(USERINCLUDE)
 
 KBUILD_AFLAGS   := -D__ASSEMBLY__
-KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
+KBUILD_CFLAGS   := -O3 -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common -fshort-wchar \
 		   -Werror-implicit-function-declaration \
-		   -Wno-format-security \
-		   -std=gnu89
+		   -Wno-format-security -fno-stack-protector \
+		   -std=gnu89 -pipe
 KBUILD_CPPFLAGS := -D__KERNEL__
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
@@ -687,7 +706,15 @@ else
 KBUILD_CFLAGS   += -O3
 ifeq ($(cc-name),clang)
 KBUILD_CFLAGS	+= -O3
-KBUILD_CFLAGS   += -mcpu=cortex-a53 -mtune=cortex-a53
+KBUILD_CFLAGS	+= -mllvm -polly \
+		   -mllvm -polly-run-dce \
+		   -mllvm -polly-run-inliner \
+		   -mllvm -polly-opt-fusion=max \
+		   -mllvm -polly-ast-use-context \
+		   -mllvm -polly-detect-keep-going \
+		   -mllvm -polly-vectorizer=stripmine \
+		   -mllvm -polly-invariant-load-hoisting
+KBUILD_CFLAGS   += -mcpu=kryo -mtune=kryo
 endif
 endif
 endif
@@ -754,6 +781,7 @@ KBUILD_CFLAGS += $(call cc-disable-warning, format-invalid-specifier)
 KBUILD_CFLAGS += $(call cc-disable-warning, gnu)
 KBUILD_CFLAGS += $(call cc-disable-warning, address-of-packed-member)
 KBUILD_CFLAGS += $(call cc-disable-warning, duplicate-decl-specifier)
+KBUILD_CFLAGS += -fno-builtin
 KBUILD_CFLAGS += $(call cc-option, -Wno-undefined-optimized)
 KBUILD_CFLAGS += $(call cc-option, -Wno-tautological-constant-out-of-range-compare)
 KBUILD_CFLAGS += $(call cc-option, -mllvm -disable-struct-const-merge)
