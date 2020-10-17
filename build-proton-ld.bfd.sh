@@ -91,11 +91,11 @@ ls -lash  ./dtbo.img
 cp ./dtbo.img ANYKERNEL/
 cp ./Image.gz-dtb ANYKERNEL/
 
-#cd ANYKERNEL/
-#rm 4.9.2*.zip
-#zip -r9 4.9.238-DirtyDragons_rV5+OCEAN-Thursday-October-01-2020.zip * -x .git README.md *placeholder
-#cp 4.9.238-DirtyDragons_rV5+OCEAN-Thursday-October-01-2020.zip /home/javashin/Desktop/
-#ls -lash 4.9.238-DirtyDragons_rV5+OCEAN-Thursday-October-01-2020.zip ; pwd ; cd .. ; pwd
+cd ANYKERNEL/
+rm 4.9.2*.zip
+zip -r9 4.14.117-Ginkgo-Vikingo-TestBuild-Number-2.zip * -x .git README.md *placeholder
+cp 4.14.117-Ginkgo-Vikingo-TestBuild-Number-2.zip /home/javashin/Desktop/
+ls -lash 4.14.117-Ginkgo-Vikingo-TestBuild-Number-2.zip ; pwd ; cd .. ; pwd
 
 echo "YAY"
 echo "KERNAL KERNAL KERNAL KERNAL KARNAL KARMA KARMA KARMA"
