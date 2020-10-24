@@ -88,14 +88,15 @@ cp /OUT/arch/arm64/boot/dtbo.img .
 ls -lash /OUT/arch/arm64/boot/dtbo.img
 ls -lash  ./dtbo.img
 
-cp ./dtbo.img ANYKERNEL/
+rm ANYKERNEL/dtbo.img ANYKERNEL/Image.gz-dtb
+#cp ./dtbo.img ANYKERNEL/
 cp ./Image.gz-dtb ANYKERNEL/
 
 cd ANYKERNEL/
-rm 4.9.2*.zip
-zip -r9 4.14.117-Ginkgo-Vikingo-TestBuild-Number-2.zip * -x .git README.md *placeholder
-cp 4.14.117-Ginkgo-Vikingo-TestBuild-Number-2.zip /home/javashin/Desktop/
-ls -lash 4.14.117-Ginkgo-Vikingo-TestBuild-Number-2.zip ; pwd ; cd .. ; pwd
+rm *.zip
+zip -r9 jsX-RN8-4.14.117-Ginkgo-Vikingo_rV1.1+Sat-October-24-2020.zip * -x .git README.md *placeholder
+cp jsX-RN8-4.14.117-Ginkgo-Vikingo_rV1.1+Sat-October-24-2020.zip /home/javashin/Desktop/
+ls -lash jsX-RN8-4.14.117-Ginkgo-Vikingo_rV1.1+Sat-October-24-2020.zip ; pwd ; cd .. ; pwd
 
 echo "YAY"
 echo "KERNAL KERNAL KERNAL KERNAL KARNAL KARMA KARMA KARMA"

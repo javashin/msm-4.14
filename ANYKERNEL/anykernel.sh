@@ -4,7 +4,7 @@
 ## AnyKernel setup
 # begin properties
 properties() { '
-kernel.string=(-) DirtyDragons Ginkgo-Vikingo (-)
+kernel.string=(-) jsX-CustoKernal Ginkgo-Vikingo_rV1.1+ (-)
 do.devicecheck=1
 do.modules=0
 do.systemless=1
