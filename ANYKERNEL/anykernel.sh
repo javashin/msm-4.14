@@ -4,14 +4,14 @@
 ## AnyKernel setup
 # begin properties
 properties() { '
-kernel.string=(-) jsX-CustoKernal Ginkgo-Vikingo_rV2+ (-)
+kernel.string=(-) jsX-CustoKernal RN8/8T Ginkgo-Vikingo_rV3+ (-)
 do.devicecheck=1
 do.modules=0
 do.systemless=1
 do.cleanup=1
 do.cleanuponabort=0
 device.name1=ginkgo
-device.name2=
+device.name2=willow
 supported.versions=10.0-11.0
 supported.patchlevels=
 '; } # end properties
