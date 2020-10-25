@@ -4,7 +4,7 @@
 ## AnyKernel setup
 # begin properties
 properties() { '
-kernel.string=(-) jsX-CustoKernal Ginkgo-Vikingo_rV1.1+ (-)
+kernel.string=(-) jsX-CustoKernal Ginkgo-Vikingo_rV2+ (-)
 do.devicecheck=1
 do.modules=0
 do.systemless=1

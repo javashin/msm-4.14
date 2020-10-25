@@ -94,9 +94,9 @@ cp ./Image.gz-dtb ANYKERNEL/
 
 cd ANYKERNEL/
 rm *.zip
-zip -r9 jsX-RN8-4.14.117-Ginkgo-Vikingo_rV1.1+Sat-October-24-2020.zip * -x .git README.md *placeholder
-cp jsX-RN8-4.14.117-Ginkgo-Vikingo_rV1.1+Sat-October-24-2020.zip /home/javashin/Desktop/
-ls -lash jsX-RN8-4.14.117-Ginkgo-Vikingo_rV1.1+Sat-October-24-2020.zip ; pwd ; cd .. ; pwd
+zip -r9 jsX-RN8-4.14.117-Ginkgo-Vikingo_rV2+Sat-October-24-2020.zip * -x .git README.md *placeholder
+cp jsX-RN8-4.14.117-Ginkgo-Vikingo_rV2+Sat-October-24-2020.zip /home/javashin/Desktop/
+ls -lash jsX-RN8-4.14.117-Ginkgo-Vikingo_rV2+Sat-October-24-2020.zip ; pwd ; cd .. ; pwd
 
 echo "YAY"
 echo "KERNAL KERNAL KERNAL KERNAL KARNAL KARMA KARMA KARMA"
