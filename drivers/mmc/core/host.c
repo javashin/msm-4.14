@@ -550,6 +550,154 @@ out:
 
 }
 
+static ssize_t enable_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct mmc_host *host = cls_dev_to_mmc_host(dev);
+
+	if (!host)
+		return -EINVAL;
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", mmc_can_scale_clk(host));
+}
+
+static ssize_t enable_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct mmc_host *host = cls_dev_to_mmc_host(dev);
+	unsigned long value;
+
+	if (!host || !host->card || kstrtoul(buf, 0, &value))
+		return -EINVAL;
+
+	mmc_get_card(host->card, NULL);
+
+	if (!value) {
+		/* Suspend the clock scaling and mask host capability */
+		if (host->clk_scaling.enable)
+			mmc_suspend_clk_scaling(host);
+		host->clk_scaling.enable = false;
+		host->caps2 &= ~MMC_CAP2_CLK_SCALE;
+		host->clk_scaling.state = MMC_LOAD_HIGH;
+		/* Set to max. frequency when disabling */
+		mmc_clk_update_freq(host, host->card->clk_scaling_highest,
+					host->clk_scaling.state);
+	} else if (value) {
+		/* Unmask host capability and resume scaling */
+		host->caps2 |= MMC_CAP2_CLK_SCALE;
+		if (!host->clk_scaling.enable) {
+			host->clk_scaling.enable = true;
+			mmc_resume_clk_scaling(host);
+		}
+	}
+
+	mmc_put_card(host->card, NULL);
+
+	return count;
+}
+
+static ssize_t up_threshold_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct mmc_host *host = cls_dev_to_mmc_host(dev);
+
+	if (!host)
+		return -EINVAL;
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", host->clk_scaling.upthreshold);
+}
+
+#define MAX_PERCENTAGE	100
+static ssize_t up_threshold_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct mmc_host *host = cls_dev_to_mmc_host(dev);
+	unsigned long value;
+
+	if (!host || kstrtoul(buf, 0, &value) || (value > MAX_PERCENTAGE))
+		return -EINVAL;
+
+	host->clk_scaling.upthreshold = value;
+
+	pr_debug("%s: clkscale_up_thresh set to %lu\n",
+			mmc_hostname(host), value);
+	return count;
+}
+
+static ssize_t down_threshold_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct mmc_host *host = cls_dev_to_mmc_host(dev);
+
+	if (!host)
+		return -EINVAL;
+
+	return snprintf(buf, PAGE_SIZE, "%d\n",
+			host->clk_scaling.downthreshold);
+}
+
+static ssize_t down_threshold_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct mmc_host *host = cls_dev_to_mmc_host(dev);
+	unsigned long value;
+
+	if (!host || kstrtoul(buf, 0, &value) || (value > MAX_PERCENTAGE))
+		return -EINVAL;
+
+	host->clk_scaling.downthreshold = value;
+
+	pr_debug("%s: clkscale_down_thresh set to %lu\n",
+			mmc_hostname(host), value);
+	return count;
+}
+
+static ssize_t polling_interval_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct mmc_host *host = cls_dev_to_mmc_host(dev);
+
+	if (!host)
+		return -EINVAL;
+
+	return snprintf(buf, PAGE_SIZE, "%lu milliseconds\n",
+			host->clk_scaling.polling_delay_ms);
+}
+
+static ssize_t polling_interval_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct mmc_host *host = cls_dev_to_mmc_host(dev);
+	unsigned long value;
+
+	if (!host || kstrtoul(buf, 0, &value))
+		return -EINVAL;
+
+	host->clk_scaling.polling_delay_ms = value;
+
+	pr_debug("%s: clkscale_polling_delay_ms set to %lu\n",
+			mmc_hostname(host), value);
+	return count;
+}
+
+DEVICE_ATTR_RW(enable);
+DEVICE_ATTR_RW(polling_interval);
+DEVICE_ATTR_RW(up_threshold);
+DEVICE_ATTR_RW(down_threshold);
+
+static struct attribute *clk_scaling_attrs[] = {
+	&dev_attr_enable.attr,
+	&dev_attr_up_threshold.attr,
+	&dev_attr_down_threshold.attr,
+	&dev_attr_polling_interval.attr,
+	NULL,
+};
+
+static struct attribute_group clk_scaling_attr_grp = {
+	.name = "clk_scaling",
+	.attrs = clk_scaling_attrs,
+};
+
 /**
  *	mmc_of_parse() - parse host's device-tree node
  *	@host: host whose node should be parsed.
@@ -1018,6 +1166,10 @@ static DEVICE_ATTR(perf, 0644,
 		show_perf, set_perf);
 
 #endif
+	err = sysfs_create_group(&host->class_dev.kobj, &clk_scaling_attr_grp);
+	if (err)
+		pr_err("%s: failed to create clk scale sysfs group with err %d\n",
+				__func__, err);
 
 static struct attribute *dev_attrs[] = {
 #ifdef CONFIG_MMC_PERF_PROFILING
@@ -1114,6 +1266,7 @@ void mmc_remove_host(struct mmc_host *host)
 	sysfs_remove_group(&host->parent->kobj, &dev_attr_grp);
 	sysfs_remove_group(&host->class_dev.kobj, &clk_scaling_attr_grp);
 
+	sysfs_remove_group(&host->class_dev.kobj, &clk_scaling_attr_grp);
 	device_del(&host->class_dev);
 
 	led_trigger_unregister_simple(host->led);
