@@ -479,6 +479,16 @@ int mmc_retune(struct mmc_host *host)
 			host->ops->prepare_hs400_tuning(host, &host->ios);
 	}
 
+	/*
+	 * Timing should be adjusted to the HS400 target
+	 * operation frequency for tuning process.
+	 * Similar handling is also done in mmc_hs200_tuning()
+	 * This is handled properly in sdhci-msm.c from msm-5.4 onwards.
+	 */
+	if (host->card->mmc_avail_type & EXT_CSD_CARD_TYPE_HS400 &&
+		host->ios.bus_width == MMC_BUS_WIDTH_8)
+		mmc_set_timing(host, MMC_TIMING_MMC_HS400);
+
 	err = mmc_execute_tuning(host->card);
 	if (err)
 		goto out;
@@ -498,6 +508,44 @@ static void mmc_retune_timer(unsigned long data)
 	mmc_retune_needed(host);
 }
 
+static int mmc_dt_get_array(struct device *dev, const char *prop_name,
+				u32 **out, int *len, u32 size)
+{
+	int ret = 0;
+	struct device_node *np = dev->of_node;
+	size_t sz;
+	u32 *arr = NULL;
+
+	if (!of_get_property(np, prop_name, len)) {
+		ret = -EINVAL;
+		goto out;
+	}
+	sz = *len = *len / sizeof(*arr);
+	if (sz <= 0 || (size > 0 && (sz > size))) {
+		dev_err(dev, "%s invalid size\n", prop_name);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	arr = devm_kcalloc(dev, sz, sizeof(*arr), GFP_KERNEL);
+	if (!arr) {
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	ret = of_property_read_u32_array(np, prop_name, arr, sz);
+	if (ret < 0) {
+		dev_err(dev, "%s failed reading array %d\n", prop_name, ret);
+		goto out;
+	}
+	*out = arr;
+out:
+	if (ret)
+		*len = 0;
+	return ret;
+
+}
+
 /**
  *	mmc_of_parse() - parse host's device-tree node
  *	@host: host whose node should be parsed.
@@ -510,10 +558,12 @@ static void mmc_retune_timer(unsigned long data)
 int mmc_of_parse(struct mmc_host *host)
 {
 	struct device *dev = host->parent;
+    struct device_node *np = dev->of_node;
 	u32 bus_width;
 	int ret;
 	bool cd_cap_invert, cd_gpio_invert = false;
 	bool ro_cap_invert, ro_gpio_invert = false;
+    const char *lower_bus_speed = NULL;
 
 	if (!dev || !dev_fwnode(dev))
 		return 0;
@@ -658,6 +708,29 @@ int mmc_of_parse(struct mmc_host *host)
 			"device tree specified broken value for DSR: 0x%x, ignoring\n",
 			host->dsr);
 		host->dsr_req = 0;
+	}
+
+	if (mmc_dt_get_array(dev, "devfreq,freq-table",
+				&host->clk_scaling.pltfm_freq_table,
+				&host->clk_scaling.pltfm_freq_table_sz, 0))
+		pr_debug("%s: no clock scaling frequencies were supplied\n",
+				dev_name(dev));
+	else if (!host->clk_scaling.pltfm_freq_table ||
+			host->clk_scaling.pltfm_freq_table_sz)
+		dev_info(dev, "bad dts clock scaling frequencies\n");
+
+	/*
+	 * Few hosts can support DDR52 mode at the same lower
+	 * system voltage corner as high-speed mode. In such
+	 * cases, it is always better to put it in DDR
+	 * mode which will improve the performance
+	 * without any power impact.
+	 */
+	if (!of_property_read_string(np, "scaling-lower-bus-speed-mode",
+			&lower_bus_speed)) {
+		if (!strncmp(lower_bus_speed, "DDR52", strlen(lower_bus_speed)))
+			host->clk_scaling.lower_bus_speed_mode |=
+				MMC_SCALING_LOWER_DDR52_MODE;
 	}
 
 	return mmc_pwrseq_alloc(host);
