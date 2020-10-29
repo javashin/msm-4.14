@@ -672,6 +672,11 @@ int snd_rawmidi_output_params(struct snd_rawmidi_substream *substream,
 			return -ENOMEM;
 		}
 		spin_lock_irqsave(&runtime->lock, flags);
+		if (runtime->buffer_ref) {
+			spin_unlock_irq(&runtime->lock);
+			kfree(newbuf);
+			return -EBUSY;
+		}
 		oldbuf = runtime->buffer;
 		runtime->buffer = newbuf;
 		runtime->buffer_size = params->buffer_size;
