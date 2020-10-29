@@ -40,10 +40,6 @@
 #define MMC_DEVFRQ_DEFAULT_DOWN_THRESHOLD 5
 #define MMC_DEVFRQ_DEFAULT_POLLING_MSEC 100
 
-#define MMC_DEVFRQ_DEFAULT_UP_THRESHOLD 35
-#define MMC_DEVFRQ_DEFAULT_DOWN_THRESHOLD 5
-#define MMC_DEVFRQ_DEFAULT_POLLING_MSEC 100
-
 static DEFINE_IDA(mmc_host_ida);
 
 static void mmc_host_classdev_release(struct device *dev)
@@ -512,192 +508,6 @@ static void mmc_retune_timer(unsigned long data)
 	mmc_retune_needed(host);
 }
 
-static int mmc_dt_get_array(struct device *dev, const char *prop_name,
-				u32 **out, int *len, u32 size)
-{
-	int ret = 0;
-	struct device_node *np = dev->of_node;
-	size_t sz;
-	u32 *arr = NULL;
-
-	if (!of_get_property(np, prop_name, len)) {
-		ret = -EINVAL;
-		goto out;
-	}
-	sz = *len = *len / sizeof(*arr);
-	if (sz <= 0 || (size > 0 && (sz > size))) {
-		dev_err(dev, "%s invalid size\n", prop_name);
-		ret = -EINVAL;
-		goto out;
-	}
-
-	arr = devm_kcalloc(dev, sz, sizeof(*arr), GFP_KERNEL);
-	if (!arr) {
-		ret = -ENOMEM;
-		goto out;
-	}
-
-	ret = of_property_read_u32_array(np, prop_name, arr, sz);
-	if (ret < 0) {
-		dev_err(dev, "%s failed reading array %d\n", prop_name, ret);
-		goto out;
-	}
-	*out = arr;
-out:
-	if (ret)
-		*len = 0;
-	return ret;
-
-}
-
-static ssize_t enable_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	struct mmc_host *host = cls_dev_to_mmc_host(dev);
-
-	if (!host)
-		return -EINVAL;
-
-	return snprintf(buf, PAGE_SIZE, "%d\n", mmc_can_scale_clk(host));
-}
-
-static ssize_t enable_store(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t count)
-{
-	struct mmc_host *host = cls_dev_to_mmc_host(dev);
-	unsigned long value;
-
-	if (!host || !host->card || kstrtoul(buf, 0, &value))
-		return -EINVAL;
-
-	mmc_get_card(host->card, NULL);
-
-	if (!value) {
-		/* Suspend the clock scaling and mask host capability */
-		if (host->clk_scaling.enable)
-			mmc_suspend_clk_scaling(host);
-		host->clk_scaling.enable = false;
-		host->caps2 &= ~MMC_CAP2_CLK_SCALE;
-		host->clk_scaling.state = MMC_LOAD_HIGH;
-		/* Set to max. frequency when disabling */
-		mmc_clk_update_freq(host, host->card->clk_scaling_highest,
-					host->clk_scaling.state);
-	} else if (value) {
-		/* Unmask host capability and resume scaling */
-		host->caps2 |= MMC_CAP2_CLK_SCALE;
-		if (!host->clk_scaling.enable) {
-			host->clk_scaling.enable = true;
-			mmc_resume_clk_scaling(host);
-		}
-	}
-
-	mmc_put_card(host->card, NULL);
-
-	return count;
-}
-
-static ssize_t up_threshold_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	struct mmc_host *host = cls_dev_to_mmc_host(dev);
-
-	if (!host)
-		return -EINVAL;
-
-	return snprintf(buf, PAGE_SIZE, "%d\n", host->clk_scaling.upthreshold);
-}
-
-#define MAX_PERCENTAGE	100
-static ssize_t up_threshold_store(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t count)
-{
-	struct mmc_host *host = cls_dev_to_mmc_host(dev);
-	unsigned long value;
-
-	if (!host || kstrtoul(buf, 0, &value) || (value > MAX_PERCENTAGE))
-		return -EINVAL;
-
-	host->clk_scaling.upthreshold = value;
-
-	pr_debug("%s: clkscale_up_thresh set to %lu\n",
-			mmc_hostname(host), value);
-	return count;
-}
-
-static ssize_t down_threshold_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	struct mmc_host *host = cls_dev_to_mmc_host(dev);
-
-	if (!host)
-		return -EINVAL;
-
-	return snprintf(buf, PAGE_SIZE, "%d\n",
-			host->clk_scaling.downthreshold);
-}
-
-static ssize_t down_threshold_store(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t count)
-{
-	struct mmc_host *host = cls_dev_to_mmc_host(dev);
-	unsigned long value;
-
-	if (!host || kstrtoul(buf, 0, &value) || (value > MAX_PERCENTAGE))
-		return -EINVAL;
-
-	host->clk_scaling.downthreshold = value;
-
-	pr_debug("%s: clkscale_down_thresh set to %lu\n",
-			mmc_hostname(host), value);
-	return count;
-}
-
-static ssize_t polling_interval_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	struct mmc_host *host = cls_dev_to_mmc_host(dev);
-
-	if (!host)
-		return -EINVAL;
-
-	return snprintf(buf, PAGE_SIZE, "%lu milliseconds\n",
-			host->clk_scaling.polling_delay_ms);
-}
-
-static ssize_t polling_interval_store(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t count)
-{
-	struct mmc_host *host = cls_dev_to_mmc_host(dev);
-	unsigned long value;
-
-	if (!host || kstrtoul(buf, 0, &value))
-		return -EINVAL;
-
-	host->clk_scaling.polling_delay_ms = value;
-
-	pr_debug("%s: clkscale_polling_delay_ms set to %lu\n",
-			mmc_hostname(host), value);
-	return count;
-}
-
-DEVICE_ATTR_RW(enable);
-DEVICE_ATTR_RW(polling_interval);
-DEVICE_ATTR_RW(up_threshold);
-DEVICE_ATTR_RW(down_threshold);
-
-static struct attribute *clk_scaling_attrs[] = {
-	&dev_attr_enable.attr,
-	&dev_attr_up_threshold.attr,
-	&dev_attr_down_threshold.attr,
-	&dev_attr_polling_interval.attr,
-	NULL,
-};
-
-static struct attribute_group clk_scaling_attr_grp = {
-	.name = "clk_scaling",
-	.attrs = clk_scaling_attrs,
-};
-
 /**
  *	mmc_of_parse() - parse host's device-tree node
  *	@host: host whose node should be parsed.
@@ -710,12 +520,10 @@ static struct attribute_group clk_scaling_attr_grp = {
 int mmc_of_parse(struct mmc_host *host)
 {
 	struct device *dev = host->parent;
-    struct device_node *np = dev->of_node;
 	u32 bus_width;
 	int ret;
 	bool cd_cap_invert, cd_gpio_invert = false;
 	bool ro_cap_invert, ro_gpio_invert = false;
-    const char *lower_bus_speed = NULL;
 
 	if (!dev || !dev_fwnode(dev))
 		return 0;
@@ -862,29 +670,6 @@ int mmc_of_parse(struct mmc_host *host)
 		host->dsr_req = 0;
 	}
 
-	if (mmc_dt_get_array(dev, "devfreq,freq-table",
-				&host->clk_scaling.pltfm_freq_table,
-				&host->clk_scaling.pltfm_freq_table_sz, 0))
-		pr_debug("%s: no clock scaling frequencies were supplied\n",
-				dev_name(dev));
-	else if (!host->clk_scaling.pltfm_freq_table ||
-			host->clk_scaling.pltfm_freq_table_sz)
-		dev_info(dev, "bad dts clock scaling frequencies\n");
-
-	/*
-	 * Few hosts can support DDR52 mode at the same lower
-	 * system voltage corner as high-speed mode. In such
-	 * cases, it is always better to put it in DDR
-	 * mode which will improve the performance
-	 * without any power impact.
-	 */
-	if (!of_property_read_string(np, "scaling-lower-bus-speed-mode",
-			&lower_bus_speed)) {
-		if (!strncmp(lower_bus_speed, "DDR52", strlen(lower_bus_speed)))
-			host->clk_scaling.lower_bus_speed_mode |=
-				MMC_SCALING_LOWER_DDR52_MODE;
-	}
-
 	return mmc_pwrseq_alloc(host);
 }
 
@@ -938,7 +723,6 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
 	mmc_host_clk_init(host);
 
 	spin_lock_init(&host->lock);
-	atomic_set(&host->active_reqs, 0);
 	init_waitqueue_head(&host->wq);
 	INIT_DELAYED_WORK(&host->detect, mmc_rescan);
 	INIT_DELAYED_WORK(&host->sdio_irq_work, sdio_irq_work);
@@ -1166,10 +950,6 @@ static DEVICE_ATTR(perf, 0644,
 		show_perf, set_perf);
 
 #endif
-	err = sysfs_create_group(&host->class_dev.kobj, &clk_scaling_attr_grp);
-	if (err)
-		pr_err("%s: failed to create clk scale sysfs group with err %d\n",
-				__func__, err);
 
 static struct attribute *dev_attrs[] = {
 #ifdef CONFIG_MMC_PERF_PROFILING
@@ -1201,11 +981,6 @@ int mmc_add_host(struct mmc_host *host)
 		return err;
 
 	led_trigger_register_simple(dev_name(&host->class_dev), &host->led);
-	host->clk_scaling.upthreshold = MMC_DEVFRQ_DEFAULT_UP_THRESHOLD;
-	host->clk_scaling.downthreshold = MMC_DEVFRQ_DEFAULT_DOWN_THRESHOLD;
-	host->clk_scaling.polling_delay_ms = MMC_DEVFRQ_DEFAULT_POLLING_MSEC;
-	host->clk_scaling.skip_clk_scale_freq_update = false;
-
 
 	host->clk_scaling.upthreshold = MMC_DEVFRQ_DEFAULT_UP_THRESHOLD;
 	host->clk_scaling.downthreshold = MMC_DEVFRQ_DEFAULT_DOWN_THRESHOLD;
@@ -1266,7 +1041,6 @@ void mmc_remove_host(struct mmc_host *host)
 	sysfs_remove_group(&host->parent->kobj, &dev_attr_grp);
 	sysfs_remove_group(&host->class_dev.kobj, &clk_scaling_attr_grp);
 
-	sysfs_remove_group(&host->class_dev.kobj, &clk_scaling_attr_grp);
 	device_del(&host->class_dev);
 
 	led_trigger_unregister_simple(host->led);

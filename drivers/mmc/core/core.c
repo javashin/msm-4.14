@@ -986,9 +986,6 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
 	if (host->clk_scaling.is_busy_started)
 		mmc_clk_scaling_stop_busy(host, true);
 
-	if (host->clk_scaling.is_busy_started)
-		mmc_clk_scaling_stop_busy(host, true);
-
 	/* Flag re-tuning needed on CRC errors */
 	if ((cmd->opcode != MMC_SEND_TUNING_BLOCK &&
 	    cmd->opcode != MMC_SEND_TUNING_BLOCK_HS200) &&

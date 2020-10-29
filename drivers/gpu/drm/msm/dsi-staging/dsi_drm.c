@@ -254,16 +254,16 @@ static void dsi_bridge_pre_enable(struct drm_bridge *bridge)
  *            If timeout, dsi bridge will disable panel to avoid fingerprint
  *            touch by mistake.
  */
+
 int dsi_bridge_interface_enable(int timeout)
 {
 	int ret = 0;
-
-	pr_info("%s: start\n", __func__);
+	pr_info("dsi_bridge_interface_enable start\n");
 	ret = wait_event_timeout(resume_wait_q,
 		!atomic_read(&resume_pending),
 		msecs_to_jiffies(WAIT_RESUME_TIMEOUT));
 	if (!ret) {
-		pr_err("Primary fb resume timeout\n");
+		pr_info("Primary fb resume timeout\n");
 		return -ETIMEDOUT;
 	}
 
@@ -382,7 +382,7 @@ static void dsi_bridge_post_disable(struct drm_bridge *bridge)
 		atomic_set(&prim_panel_is_on, false);
 }
 
-#if (defined CONFIG_TOUCHSCREEN_XIAOMI_C3J)
+#if (defined CONFIG_TOUCHSCREEN_XIAOMI_C3J) || (defined CONFIG_TOUCHSCREEN_XIAOMI_C3X)
 typedef int(*touchpanel_recovery_cb_p_t)(void);
 static touchpanel_recovery_cb_p_t touchpanel_recovery_cb_p = NULL;
 int set_touchpanel_recovery_callback(touchpanel_recovery_cb_p_t cb)
@@ -399,7 +399,7 @@ static void prim_panel_off_delayed_work(struct work_struct *work)
 {
 	mutex_lock(&gbridge->base.lock);
 	if (atomic_read(&prim_panel_is_on)) {
-#if (defined CONFIG_TOUCHSCREEN_XIAOMI_C3J)
+#if (defined CONFIG_TOUCHSCREEN_XIAOMI_C3J) || (defined CONFIG_TOUCHSCREEN_XIAOMI_C3X)
 		if (!IS_ERR_OR_NULL(touchpanel_recovery_cb_p))
 			touchpanel_recovery_cb_p();
 #endif
