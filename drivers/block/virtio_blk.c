@@ -65,6 +65,7 @@ struct virtio_blk {
 	struct request *req_pending;
 	bool work_pending;
 #endif
+
 	/*
 	 * Tracks references from block_device_operations open/release and
 	 * virtio_driver probe/remove so this object can be freed once no
