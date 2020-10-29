@@ -662,6 +662,8 @@ static int spidev_release(struct inode *inode, struct file *filp)
 	spidev->users--;
 	if (!spidev->users) {
 
+		int		dofree;
+
 		spin_lock_irq(&spidev->spi_lock);
 		if (spidev->spi)
 			spidev->speed_hz = spidev->spi->max_speed_hz;
