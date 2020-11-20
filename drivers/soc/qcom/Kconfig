@@ -914,6 +914,14 @@ config QCOM_AOP_DDRSS_COMMANDS
 	help
 	  This driver allows messages to be sent to the AOP to affect the DDRSS
 	  behavior.
+
+config STATE_NOTIFIER
+	bool "State Notifier"
+	default y
+	help
+	  A unified display state notifier for kernel drivers for easy porting
+	  between different devices.
+
 endmenu
 
 config QCOM_HYP_CORE_CTL
