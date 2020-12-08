@@ -242,7 +242,6 @@ static void msm_pm_qos_remove_request(void)
 void msm_pm_qos_update_request(int val)
 {
 	pr_info("%s: update request %d", __func__, val);
-	msm_pm_qos_add_request();
 	pm_qos_update_request(&msm_v4l2_pm_qos_request, val);
 }
 
