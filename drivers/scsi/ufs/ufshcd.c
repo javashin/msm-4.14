@@ -7505,13 +7505,6 @@ static irqreturn_t ufshcd_intr(int irq, void *__hba)
 		intr_status = ufshcd_readl(hba, REG_INTERRUPT_STATUS);
 	}
 
-	if (retval == IRQ_NONE) {
-		dev_err(hba->dev, "%s: Unhandled interrupt 0x%08x\n",
-					__func__, intr_status);
-		ufshcd_hex_dump(hba, "host regs: ", hba->mmio_base,
-					UFSHCI_REG_SPACE_SIZE);
-	}
-
 	spin_unlock(hba->host->host_lock);
 	return retval;
 }
