@@ -2559,12 +2559,6 @@ int ufs_qcom_testbus_config(struct ufs_qcom_host *host)
 	 */
 	}
 
-	if (offset < 0) {
-		dev_err(hba->dev, "%s: Bad offset: %d\n", __func__, offset);
-		ret = -EINVAL;
-		spin_unlock_irqrestore(hba->host->host_lock, flags);
-		goto out;
-	}
 	mask <<= offset;
 	ufshcd_rmwl(host->hba, TEST_BUS_SEL,
 		    (u32)host->testbus.select_major << 19,
