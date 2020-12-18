@@ -780,6 +780,9 @@ static void watchpoint_handler(unsigned long addr, unsigned int fsr,
 				if (!(access & hw_breakpoint_type(wp)))
 					continue;
 			}
+			/* Is this an exact match? */
+			if (dist != 0)
+				continue;
 
 			val = read_wb_reg(ARM_BASE_WVR + i);
 			ctrl_reg = read_wb_reg(ARM_BASE_WCR + i);
